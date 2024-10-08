@@ -1,7 +1,7 @@
 ﻿# CMakeList.txt: проект CMake для renderlib; включите исходный код и определения,
 # укажите здесь логику для конкретного проекта.
 #
-cmake_minimum_required (VERSION 3.12)
+cmake_minimum_required (VERSION 3.13)
 
 # Включение горячей перезагрузки для компиляторов MSVC, если поддерживается.
 if (POLICY CMP0141)
@@ -14,11 +14,14 @@ project ("renderlib")
 # resources
 set(ASSETS_DIR "${CMAKE_SOURCE_DIR}/assets")
 
-# Добавьте источник в исполняемый файл этого проекта.
-add_executable (${PROJECT_NAME})
-configure_file(config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/core/config.h @ONLY)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_library(${PROJECT_NAME})
+add_subdirectory(src)
+target_link_libraries(${PROJECT_NAME} PUBLIC src)
 
+configure_file(config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}/incude/core/config.h @ONLY)
 
 # Собираем шейдеры
 
@@ -43,54 +46,5 @@ foreach(SPV_FILE ${SPV_SHADERS})
           COMMENT "Copying ${SPV_FILENAME} to build directory")
 endforeach()
 
-# Компиляция C++
-
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/src
-)
-
-target_sources(${PROJECT_NAME} PRIVATE ${SOURCES})
-
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
-endif()
-
-find_package(spdlog CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
-
-find_package(flecs CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE $<IF:$<TARGET_EXISTS:flecs::flecs>,flecs::flecs,flecs::flecs_static>)
-
-find_package(glm CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
-
-find_package(SDL2 CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
-    $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
-)
-
-find_package(vk-bootstrap CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE vk-bootstrap::vk-bootstrap)
-
-find_package(Vulkan REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
-
-find_package(VulkanMemoryAllocator CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
-
-#imgui
-find_package(imgui REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
-
-find_package(Stb REQUIRED)
-target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
-
-find_package(fastgltf CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE fastgltf::fastgltf)
-
-
+add_executable(${PROJECT_NAME}.x main.cpp)
+target_link_libraries(${PROJECT_NAME}.x ${PROJECT_NAME})
